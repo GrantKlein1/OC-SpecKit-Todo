@@ -1,7 +1,7 @@
 # API Reference
 
 **Base path:** `/todo/`  
-**Status:** Integrated API through **Feature 1** (authentication and session management).  
+**Status:** Integrated API through **Feature 2** (todo list management).  
 **Authority for new work:** feature specs in `features/` — update this file in the same PR when routes or payloads change.
 
 **Auth:** Send `Authorization: Bearer <token>` on protected routes.  
@@ -12,7 +12,7 @@
 | Area | Feature |
 |------|---------|
 | Register, login, logout | 1 |
-| `GET /todo/lists` (authenticated empty list until Feature 2) | 1 |
+| List CRUD (`GET/POST /todo/lists`, `PUT/DELETE /todo/lists/:listId`) | 2 |
 
 ---
 
@@ -69,10 +69,35 @@ Password hashes are never returned.
 
 ---
 
-## Lists (Feature 1 placeholder)
+## Lists (Feature 2)
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| `GET` | `/todo/lists` | Yes | Lists owned by the caller. Feature 1 returns `[]`; Feature 2 adds persistence and CRUD. |
+| `GET` | `/todo/lists` | Yes | Fetch all lists owned by the authenticated user, ordered alphabetically by `name` |
+| `POST` | `/todo/lists` | Yes | Create a new list owned by the authenticated user |
+| `PUT` | `/todo/lists/:listId` | Yes | Rename a list owned by the caller |
+| `DELETE` | `/todo/lists/:listId` | Yes | Delete a list owned by the caller |
 
-Unauthenticated `GET /todo/lists` returns `401`.
+All list endpoints require a valid session. Cross-user access returns `404` (not `403`). Invalid `listId` returns `400`.
+
+**Create / rename request body:**
+```json
+{ "name": "Groceries" }
+```
+
+`userId` in the request body is ignored. Ownership is always `req.user.id`. Names are trimmed before save.
+
+**List success response** (`200` / `201`):
+```json
+{
+  "id": 1,
+  "name": "Groceries",
+  "userId": 42,
+  "createdAt": "2026-07-02T12:00:00.000Z",
+  "updatedAt": "2026-07-02T12:00:00.000Z"
+}
+```
+
+`GET /todo/lists` returns an array of list objects. `DELETE` returns `200` with the deleted list object.
+
+**List errors:** empty or whitespace-only name `400` with `"List name is required."`; name longer than 100 characters `400` with `"List name must be 100 characters or fewer."`; not found / not owned `404` with `"List with id=<id> not found."`; unauthenticated `401`.

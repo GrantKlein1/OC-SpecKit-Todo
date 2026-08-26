@@ -7,6 +7,7 @@ export const syncTestDatabase = async () => {
 };
 
 export const resetTestDatabase = async () => {
+  await db.list.destroy({ where: {} });
   await db.session.destroy({ where: {} });
   await db.user.destroy({ where: {} });
 };
