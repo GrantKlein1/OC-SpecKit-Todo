@@ -317,7 +317,7 @@ Replaces the Feature 1 placeholder home page. **Single Vue view** (`Dashboard.vu
 |-------|----------|-----------|-----------|
 | US-2.1 | User creates a new list | `backend/tests/lists.test.js`, `frontend/tests/Dashboard.test.js` | `User creates a new list` |
 | US-2.1 | User creates a list with an empty name | `backend/tests/lists.test.js`, `frontend/tests/Dashboard.test.js` | `User creates a list with an empty name` |
-| US-2.1 | User creates a list with a name that is too long | `backend/tests/lists.test.js` | `User creates a list with a name that is too long` |
+| US-2.1 | User creates a list with a name that is too long | `backend/tests/lists.test.js`, `frontend/tests/Dashboard.test.js` | `User creates a list with a name that is too long` |
 | US-2.2 | Dashboard loads with existing lists | `backend/tests/lists.test.js`, `frontend/tests/Dashboard.test.js` | `Dashboard loads with existing lists` |
 | US-2.2 | User has no lists | `frontend/tests/Dashboard.test.js` | `User has no lists` |
 | US-2.2 | User cannot see another user's lists | `backend/tests/lists.test.js` | `User cannot see another user's lists` |
@@ -327,6 +327,7 @@ Replaces the Feature 1 placeholder home page. **Single Vue view** (`Dashboard.vu
 | US-2.5 | User attempts to rename another user's list | `backend/tests/lists.test.js` | `User attempts to rename another user's list` |
 | US-2.5 | User attempts to delete another user's list | `backend/tests/lists.test.js` | `User attempts to delete another user's list` |
 | US-2.5 | Client cannot assign a list to another user on create | `backend/tests/lists.test.js` | `Client cannot assign a list to another user on create` |
+| US-2.5 | Unauthenticated user accesses the dashboard | `frontend/tests/Dashboard.test.js` | `Unauthenticated user accesses the dashboard` |
 | US-2.5 | Unauthenticated API request to lists | `backend/tests/lists.test.js` | `Unauthenticated API request to lists` |
 
 ---
@@ -351,13 +352,13 @@ Do not implement behavior not in this spec.
 
 ## Definition of Done
 
-*   [ ] Backend and frontend implemented per this spec (**FR-00N** satisfied)
-*   [ ] **Success Criteria (SC-00N)** met
-*   [ ] All mapped tests pass (`npm test`)
-*   [ ] Test Coverage Map complete
-*   [ ] `features/reference/data-model.md` updated (if schema changed)
-*   [ ] `features/reference/api.md` updated (if API changed)
-*   [ ] `features/reference/behavior.md` updated (if product rules changed)
+*   [x] Backend and frontend implemented per this spec (**FR-00N** satisfied)
+*   [x] **Success Criteria (SC-00N)** met
+*   [x] All mapped tests pass (`npm test`)
+*   [x] Test Coverage Map complete
+*   [x] `features/reference/data-model.md` updated (if schema changed)
+*   [x] `features/reference/api.md` updated (if API changed)
+*   [x] `features/reference/behavior.md` updated (if product rules changed)
 
 ---
 

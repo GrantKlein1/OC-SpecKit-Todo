@@ -43,15 +43,31 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Rule | Enforcement | Introduced |
 |------|-------------|------------|
 | Every authenticated request resolves to `req.user.id` from the session | `authenticate` | Feature 1 |
-| `GET /todo/lists` returns only the caller's lists (currently `[]`) | Authenticated lists placeholder | Feature 1 |
+| Every list read/update/delete includes `userId: req.user.id` in the `where` clause | List controller + `getAccessibleListOrNull` | Feature 2 |
+| A list belongs to exactly one user for its lifetime; ownership never changes | Create sets `userId` from `req.user.id` only | Feature 2 |
+| `GET /todo/lists` returns only lists owned by the caller | `where: { userId: req.user.id }` | Feature 2 |
+| Cross-user list access returns `404` (never `403`) | `getAccessibleListOrNull` | Feature 2 |
 
-## UI (Feature 1)
+## Lists
 
 | Rule | Enforcement | Introduced |
 |------|-------------|------------|
-| Login, register, and home use full-screen layout with **no MenuBar** | `App.vue` / views | Feature 1 |
-| Home placeholder welcomes the user by first name and has a standalone **Sign out** button | `Home.vue` | Feature 1 |
+| List names are trimmed before save; empty/whitespace names are rejected | List controller | Feature 2 |
+| List name max length is 100 characters (`400` if longer) | List controller | Feature 2 |
+| Lists are ordered alphabetically by name in API responses | `order: [["name", "ASC"]]` | Feature 2 |
+| Client-supplied `userId` on create is ignored | List controller | Feature 2 |
+
+## UI
+
+| Rule | Enforcement | Introduced |
+|------|-------------|------------|
+| Login and register use full-screen layout with **no MenuBar** | `MenuBar` hidden on those routes | Feature 1 / 2 |
 | Login/register server errors shown in `<v-alert type="error">` | Login / Register views | Feature 1 |
+| Signed-in chrome is `MenuBar` with the user's name and **Sign out** | `MenuBar.vue` | Feature 2 |
+| Dashboard (`home`) is a single lists view — no sidebar/main split | `Dashboard.vue` | Feature 2 |
+| Empty lists view copy: **"No lists yet. Create your first list."** | `Dashboard.vue` | Feature 2 |
+| List row icon actions: **Edit list**, **Delete list** (`size="small"`) | `Dashboard.vue` | Feature 2 |
+| Empty list name is blocked in the add-list dialog: **"List name is required."** | Dashboard form rules | Feature 2 |
 
 ## Errors (product convention)
 

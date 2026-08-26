@@ -17,10 +17,6 @@ describe("Feature 1 — authenticate middleware", () => {
     await resetTestDatabase();
   });
 
-  afterAll(async () => {
-    await db.sequelize.close();
-  });
-
   describe("US-1.3 — Stay signed in across page loads", () => {
     it("API request includes session token", async () => {
       const user = await registerUser();

@@ -1,6 +1,6 @@
 # Data Model Reference
 
-**Status:** Integrated schema through **Feature 1** (`users`, `sessions`).  
+**Status:** Integrated schema through **Feature 2** (`users`, `sessions`, `lists`).  
 **Authority for new work:** feature specs in `features/` — update this file in the same PR when schema changes.  
 **Architecture:** [ADR-0003 — MySQL relational database](../../docs/adr/0003-mysql-relational-database.md)
 
@@ -9,6 +9,7 @@
 | Table / column | Introduced |
 |----------------|------------|
 | `users`, `sessions` | Feature 1 |
+| `lists` | Feature 2 |
 
 ---
 
@@ -44,7 +45,21 @@
 
 ---
 
+## `lists`
+
+| Column | Type | Rules |
+|--------|------|-------|
+| `id` | INTEGER PK | Auto-increment |
+| `name` | STRING(100) | Required; trimmed before save; max 100 characters |
+| `userId` | INTEGER FK | Required → `users.id`; set from `req.user.id` on create; never changes |
+| `createdAt` | DATE | Sequelize timestamps |
+| `updatedAt` | DATE | Sequelize timestamps |
+
+---
+
 ## Associations
 
 * `User hasMany Session` — `onDelete: CASCADE`
 * `Session belongsTo User`
+* `User hasMany List` — `onDelete: CASCADE`
+* `List belongsTo User`

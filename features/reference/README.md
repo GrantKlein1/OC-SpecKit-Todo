@@ -30,3 +30,4 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Area | Introduced |
 |------|------------|
 | Auth, sessions | Feature 1 |
+| Lists table and list CRUD | Feature 2 |
