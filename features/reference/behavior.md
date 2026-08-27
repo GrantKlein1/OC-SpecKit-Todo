@@ -47,6 +47,10 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | A list belongs to exactly one user for its lifetime; ownership never changes | Create sets `userId` from `req.user.id` only | Feature 2 |
 | `GET /todo/lists` returns only lists owned by the caller | `where: { userId: req.user.id }` | Feature 2 |
 | Cross-user list access returns `404` (never `403`) | `getAccessibleListOrNull` | Feature 2 |
+| Every todo read/update/delete includes `userId: req.user.id` in the `where` clause | Todo controller + `getAccessibleTodoOrNull` | Feature 3 |
+| A todo belongs to exactly one list and one user for its lifetime; ownership never changes | Create sets `userId` from `req.user.id` and `listId` from the owned parent list | Feature 3 |
+| Creating a todo requires the parent list to belong to `req.user.id` | `getAccessibleListOrNull` before `Todo.create` | Feature 3 |
+| Cross-user todo or parent-list access returns `404` (never `403`) | `getAccessibleListOrNull` / `getAccessibleTodoOrNull` | Feature 3 |
 
 ## Lists
 
@@ -56,6 +60,17 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | List name max length is 100 characters (`400` if longer) | List controller | Feature 2 |
 | Lists are ordered alphabetically by name in API responses | `order: [["name", "ASC"]]` | Feature 2 |
 | Client-supplied `userId` on create is ignored | List controller | Feature 2 |
+
+## Todos
+
+| Rule | Enforcement | Introduced |
+|------|-------------|------------|
+| Todo titles are trimmed before save; empty/whitespace titles are rejected | Todo controller | Feature 3 |
+| Todo title max length is 255 characters (`400` if longer) | Todo controller | Feature 3 |
+| New todos default to `completed: false`; client-supplied `completed` on create is ignored | Todo controller | Feature 3 |
+| Todos are ordered incomplete first, then by `createdAt` ascending | `order: [["completed", "ASC"], ["createdAt", "ASC"]]` | Feature 3 |
+| Client-supplied `userId` on create is ignored | Todo controller | Feature 3 |
+| Deleting a list deletes all todos in that list | `List hasMany Todo` `onDelete: CASCADE` | Feature 3 |
 
 ## UI
 
@@ -68,6 +83,11 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Empty lists view copy: **"No lists yet. Create your first list."** | `Dashboard.vue` | Feature 2 |
 | List row icon actions: **Edit list**, **Delete list** (`size="small"`) | `Dashboard.vue` | Feature 2 |
 | Empty list name is blocked in the add-list dialog: **"List name is required."** | Dashboard form rules | Feature 2 |
+| Each list row has an **Items** icon (`View items for <list name>`) that opens a list-items dialog | `Dashboard.vue` | Feature 3 |
+| List-items dialog title is **{list name} — Items**; empty copy: **"No todos in this list yet."** | `ListItemsDialog.vue` | Feature 3 |
+| Todo add/edit/delete use nested dialogs — no sidebar/main split | `ListItemsDialog.vue` | Feature 3 |
+| Empty todo title is blocked in the add-item dialog: **"Todo title is required."** | List-items form rules | Feature 3 |
+| Completed todos show struck-through / muted title styling | `ListItemsDialog.vue` | Feature 3 |
 
 ## Errors (product convention)
 

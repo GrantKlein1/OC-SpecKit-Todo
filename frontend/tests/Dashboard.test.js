@@ -1,12 +1,16 @@
 /**
  * Feature 2 — Todo List Management
  * Spec: features/feature-2-todo-list-management.md
+ *
+ * Feature 3 — Todo List Item Management
+ * Spec: features/feature-3-todo-list-item-management.md
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { DOMWrapper, flushPromises } from "@vue/test-utils";
 import Dashboard from "../src/views/Dashboard.vue";
 import listServices from "../src/services/listServices.js";
+import todoServices from "../src/services/todoServices.js";
 import router from "../src/router.js";
 import { mountWithPlugins } from "./testUtils.js";
 
@@ -19,6 +23,15 @@ vi.mock("../src/services/listServices.js", () => ({
   },
 }));
 
+vi.mock("../src/services/todoServices.js", () => ({
+  default: {
+    getTodos: vi.fn(),
+    createTodo: vi.fn(),
+    updateTodo: vi.fn(),
+    deleteTodo: vi.fn(),
+  },
+}));
+
 const groceriesList = {
   id: 1,
   name: "Groceries",
@@ -27,6 +40,20 @@ const groceriesList = {
   updatedAt: "2026-07-02T12:00:00.000Z",
 };
 
+const buyMilkTodo = {
+  id: 10,
+  listId: 1,
+  title: "Buy milk",
+  completed: false,
+  userId: 42,
+  createdAt: "2026-07-02T12:05:00.000Z",
+  updatedAt: "2026-07-02T12:05:00.000Z",
+};
+
+function normalizeText(value) {
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
 function findButtonByText(wrapper, text) {
   const fromWrapper = wrapper.findAll("button").find((button) => button.text().includes(text));
   if (fromWrapper) {
@@ -34,14 +61,30 @@ function findButtonByText(wrapper, text) {
   }
 
   const el = [...document.body.querySelectorAll("button")].find((button) =>
-    button.textContent.replace(/\s+/g, " ").includes(text)
+    normalizeText(button.textContent).includes(text)
   );
 
   return el ? new DOMWrapper(el) : undefined;
 }
 
+function findButtonByExactText(text, { last = false } = {}) {
+  const matches = [...document.body.querySelectorAll("button")].filter(
+    (button) => normalizeText(button.textContent) === text
+  );
+
+  const el = last ? matches[matches.length - 1] : matches[0];
+  return el ? new DOMWrapper(el) : undefined;
+}
+
 function findButtonsByLabel(wrapper, label) {
-  return wrapper.findAll(`[aria-label="${label}"]`);
+  const fromWrapper = wrapper.findAll(`[aria-label="${label}"]`);
+  if (fromWrapper.length > 0) {
+    return fromWrapper;
+  }
+
+  return [...document.body.querySelectorAll(`[aria-label="${label}"]`)].map(
+    (el) => new DOMWrapper(el)
+  );
 }
 
 async function mountDashboard() {
@@ -59,6 +102,7 @@ describe("Feature 2 — Dashboard lists view", () => {
     vi.clearAllMocks();
     document.body.innerHTML = '<div id="app"></div>';
     listServices.getLists.mockResolvedValue({ data: [] });
+    todoServices.getTodos.mockResolvedValue({ data: [] });
   });
 
   afterEach(() => {
@@ -226,3 +270,214 @@ describe("Feature 2 — Dashboard lists view", () => {
     });
   });
 });
+
+async function openItemsDialog(wrapper, listName) {
+  await wrapper.find(`[aria-label="View items for ${listName}"]`).trigger("click");
+  await flushPromises();
+}
+
+describe("Feature 3 — Dashboard list items", () => {
+  let wrapper;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    document.body.innerHTML = '<div id="app"></div>';
+    listServices.getLists.mockResolvedValue({ data: [] });
+    todoServices.getTodos.mockResolvedValue({ data: [] });
+  });
+
+  afterEach(() => {
+    wrapper?.unmount();
+    document.body.innerHTML = "";
+  });
+
+  describe("US-3.1 — Add tasks to a list", () => {
+    it("User adds a todo to a list via dialog", async () => {
+      listServices.getLists.mockResolvedValue({ data: [groceriesList] });
+      todoServices.getTodos.mockResolvedValue({ data: [] });
+      todoServices.createTodo.mockResolvedValue({ data: buyMilkTodo });
+
+      ({ wrapper } = await mountDashboard());
+      await openItemsDialog(wrapper, "Groceries");
+
+      await findButtonByText(wrapper, "+ Add Item").trigger("click");
+      await flushPromises();
+
+      const titleField = wrapper
+        .findAllComponents({ name: "VTextField" })
+        .find((field) => field.props("label") === "Todo title");
+      await titleField.vm.$emit("update:modelValue", "Buy milk");
+      await flushPromises();
+
+      await findButtonByExactText("Add").trigger("click");
+      await flushPromises();
+
+      expect(todoServices.createTodo).toHaveBeenCalledWith(1, { title: "Buy milk" });
+      expect(document.body.textContent).toContain("Buy milk");
+    });
+
+    it("User adds a todo with an empty title", async () => {
+      listServices.getLists.mockResolvedValue({ data: [groceriesList] });
+
+      ({ wrapper } = await mountDashboard());
+      await openItemsDialog(wrapper, "Groceries");
+
+      await findButtonByText(wrapper, "+ Add Item").trigger("click");
+      await flushPromises();
+
+      await findButtonByExactText("Add").trigger("click");
+      await flushPromises();
+
+      expect(document.body.textContent).toContain("Todo title is required.");
+      expect(todoServices.createTodo).not.toHaveBeenCalled();
+    });
+
+    it("Add item is only available inside the items dialog", async () => {
+      listServices.getLists.mockResolvedValue({ data: [groceriesList] });
+
+      ({ wrapper } = await mountDashboard());
+
+      expect(findButtonByText(wrapper, "+ Add Item")).toBeUndefined();
+
+      await openItemsDialog(wrapper, "Groceries");
+
+      expect(findButtonByText(wrapper, "+ Add Item")).toBeDefined();
+    });
+  });
+
+  describe("US-3.2 — View tasks in a list", () => {
+    it("List items dialog shows empty state", async () => {
+      const personalList = { ...groceriesList, id: 2, name: "Personal" };
+      listServices.getLists.mockResolvedValue({ data: [personalList] });
+      todoServices.getTodos.mockResolvedValue({ data: [] });
+
+      ({ wrapper } = await mountDashboard());
+      await openItemsDialog(wrapper, "Personal");
+
+      expect(document.body.textContent).toContain("No todos in this list yet.");
+    });
+
+    it("User opens items for different lists", async () => {
+      const workList = { id: 1, name: "Work", userId: 42 };
+      const personalList = { id: 2, name: "Personal", userId: 42 };
+      const emailClient = { ...buyMilkTodo, id: 11, listId: 1, title: "Email client" };
+      const writeReport = { ...buyMilkTodo, id: 12, listId: 1, title: "Write report" };
+      const callMom = { ...buyMilkTodo, id: 13, listId: 2, title: "Call mom" };
+
+      listServices.getLists.mockResolvedValue({ data: [workList, personalList] });
+      todoServices.getTodos.mockImplementation((listId) => {
+        if (listId === 1) {
+          return Promise.resolve({ data: [emailClient, writeReport] });
+        }
+
+        if (listId === 2) {
+          return Promise.resolve({ data: [callMom] });
+        }
+
+        return Promise.resolve({ data: [] });
+      });
+
+      ({ wrapper } = await mountDashboard());
+      await openItemsDialog(wrapper, "Personal");
+
+      expect(document.body.textContent).toContain("Call mom");
+      expect(document.body.textContent).not.toContain("Email client");
+      expect(document.body.textContent).not.toContain("Write report");
+
+      await findButtonByExactText("Close").trigger("click");
+      await flushPromises();
+
+      await openItemsDialog(wrapper, "Work");
+
+      expect(document.body.textContent).toContain("Email client");
+      expect(document.body.textContent).toContain("Write report");
+      expect(document.body.textContent).not.toContain("Call mom");
+    });
+  });
+
+  describe("US-3.3 — Complete tasks", () => {
+    it("User marks a todo as complete", async () => {
+      listServices.getLists.mockResolvedValue({ data: [groceriesList] });
+      todoServices.getTodos.mockResolvedValue({ data: [buyMilkTodo] });
+      todoServices.updateTodo.mockResolvedValue({
+        data: { ...buyMilkTodo, completed: true },
+      });
+
+      ({ wrapper } = await mountDashboard());
+      await openItemsDialog(wrapper, "Groceries");
+
+      const checkbox = wrapper.findAllComponents({ name: "VCheckbox" })[0];
+      await checkbox.vm.$emit("update:modelValue", true);
+      await flushPromises();
+
+      expect(todoServices.updateTodo).toHaveBeenCalledWith(10, { completed: true });
+      expect(document.body.innerHTML).toContain("text-decoration-line-through");
+    });
+
+    it("User marks a completed todo as incomplete", async () => {
+      const completedTodo = { ...buyMilkTodo, completed: true };
+      listServices.getLists.mockResolvedValue({ data: [groceriesList] });
+      todoServices.getTodos.mockResolvedValue({ data: [completedTodo] });
+      todoServices.updateTodo.mockResolvedValue({
+        data: { ...buyMilkTodo, completed: false },
+      });
+
+      ({ wrapper } = await mountDashboard());
+      await openItemsDialog(wrapper, "Groceries");
+
+      const checkbox = wrapper.findAllComponents({ name: "VCheckbox" })[0];
+      await checkbox.vm.$emit("update:modelValue", false);
+      await flushPromises();
+
+      expect(todoServices.updateTodo).toHaveBeenCalledWith(10, { completed: false });
+      expect(document.body.innerHTML).not.toContain("text-decoration-line-through");
+    });
+  });
+
+  describe("US-3.4 — Edit and remove tasks", () => {
+    it("User edits a todo title", async () => {
+      listServices.getLists.mockResolvedValue({ data: [groceriesList] });
+      todoServices.getTodos.mockResolvedValue({ data: [buyMilkTodo] });
+      todoServices.updateTodo.mockResolvedValue({
+        data: { ...buyMilkTodo, title: "Buy oat milk" },
+      });
+
+      ({ wrapper } = await mountDashboard());
+      await openItemsDialog(wrapper, "Groceries");
+
+      await findButtonsByLabel(wrapper, "Edit item")[0].trigger("click");
+      await flushPromises();
+
+      const titleField = wrapper
+        .findAllComponents({ name: "VTextField" })
+        .find((field) => field.props("modelValue") === "Buy milk");
+      await titleField.vm.$emit("update:modelValue", "Buy oat milk");
+      await flushPromises();
+
+      await findButtonByText(wrapper, "Save").trigger("click");
+      await flushPromises();
+
+      expect(todoServices.updateTodo).toHaveBeenCalledWith(10, { title: "Buy oat milk" });
+      expect(document.body.textContent).toContain("Buy oat milk");
+    });
+
+    it("User deletes a todo", async () => {
+      listServices.getLists.mockResolvedValue({ data: [groceriesList] });
+      todoServices.getTodos.mockResolvedValue({ data: [buyMilkTodo] });
+      todoServices.deleteTodo.mockResolvedValue({ data: buyMilkTodo });
+
+      ({ wrapper } = await mountDashboard());
+      await openItemsDialog(wrapper, "Groceries");
+
+      await findButtonsByLabel(wrapper, "Delete item")[0].trigger("click");
+      await flushPromises();
+
+      await findButtonByExactText("Delete", { last: true }).trigger("click");
+      await flushPromises();
+
+      expect(todoServices.deleteTodo).toHaveBeenCalledWith(10);
+      expect(document.body.textContent).toContain("No todos in this list yet.");
+    });
+  });
+});
+

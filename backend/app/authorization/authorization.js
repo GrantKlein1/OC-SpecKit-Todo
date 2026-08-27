@@ -40,3 +40,11 @@ export const getAccessibleListOrNull = async (req, listId) => {
 
   return row ?? null;
 };
+
+export const getAccessibleTodoOrNull = async (req, todoId) => {
+  const row = await db.todo.findOne({
+    where: { id: todoId, userId: req.user.id },
+  });
+
+  return row ?? null;
+};
