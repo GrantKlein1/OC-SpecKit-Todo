@@ -1,7 +1,7 @@
 # API Reference
 
 **Base path:** `/todo/`  
-**Status:** Integrated API through **Feature 3** (todo list item management).  
+**Status:** Integrated API through **Feature 4** (user profile management).  
 **Authority for new work:** feature specs in `features/` — update this file in the same PR when routes or payloads change.
 
 **Auth:** Send `Authorization: Bearer <token>` on protected routes.  
@@ -14,6 +14,7 @@
 | Register, login, logout | 1 |
 | List CRUD (`GET/POST /todo/lists`, `PUT/DELETE /todo/lists/:listId`) | 2 |
 | Todo CRUD (`GET/POST /todo/lists/:listId/todos`, `PUT/DELETE /todo/todos/:id`) | 3 |
+| Profile (`GET/PUT /todo/users/:id`) | 4 |
 
 ---
 
@@ -144,3 +145,45 @@ All todo endpoints require a valid session. Cross-user access to a list or todo 
 `GET /todo/lists/:listId/todos` returns an array of todo objects. `DELETE` returns `200` with the deleted todo object.
 
 **Todo errors:** empty or whitespace-only title `400` with `"Todo title is required."`; title longer than 255 characters `400` with `"Todo title must be 255 characters or fewer."`; parent list not found / not owned `404` with `"List with id=<id> not found."`; todo not found / not owned `404` with `"Todo with id=<id> not found."`; unauthenticated `401`.
+
+---
+
+## Profile (Feature 4)
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `GET` | `/todo/users/:id` | Yes | Fetch the authenticated user's profile |
+| `PUT` | `/todo/users/:id` | Yes | Update the authenticated user's profile |
+
+Both endpoints require a valid session. Self-access only: `:id` must match `req.user.id`. Cross-user access returns `404` (not `403`). Invalid `:id` returns `400`.
+
+**Update profile request body:**
+```json
+{
+  "fName": "Jane",
+  "lName": "Doe",
+  "email": "jane@example.com",
+  "username": "jdoe",
+  "password": "newpassword123"
+}
+```
+
+`password` is optional. Omit it to leave the current password unchanged. `role` in the body is ignored. Fields are trimmed before save; username is stored lowercase.
+
+**Profile success response** (`200`):
+```json
+{
+  "id": 42,
+  "fName": "Jane",
+  "lName": "Doe",
+  "email": "jane@example.com",
+  "username": "jdoe",
+  "role": "worker",
+  "createdAt": "2026-07-02T12:00:00.000Z",
+  "updatedAt": "2026-07-02T12:05:00.000Z"
+}
+```
+
+Password hashes are never returned.
+
+**Profile errors:** empty required fields `400` (e.g. `"First name is required."`); password shorter than 8 characters `400` with `"Password must be at least 8 characters."`; duplicate username `400` with `"Username is already taken."`; duplicate email `400` with `"Email is already registered."`; not found / not owned `404` with `"User with id=<id> not found."`; unauthenticated `401`.
