@@ -22,10 +22,6 @@ describe("Feature 2 — Todo List API", () => {
     await resetTestDatabase();
   });
 
-  afterAll(async () => {
-    await db.sequelize.close();
-  });
-
   describe("US-2.1 — Create todo lists", () => {
     it("User creates a new list", async () => {
       const user = await registerUser();

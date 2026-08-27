@@ -31,3 +31,4 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 |------|------------|
 | Auth, sessions | Feature 1 |
 | Lists table and list CRUD | Feature 2 |
+| Todos table and todo CRUD | Feature 3 |

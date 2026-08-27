@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import listServices from "../services/listServices.js";
+import ListItemsDialog from "../components/ListItemsDialog.vue";
 
 const lists = ref([]);
 const loading = ref(false);
@@ -20,6 +21,9 @@ const editLoading = ref(false);
 const deleteDialog = ref(false);
 const deletingList = ref(null);
 const deleteLoading = ref(false);
+
+const itemsDialog = ref(false);
+const itemsList = ref(null);
 
 const nameRules = [(value) => !!value?.trim() || "List name is required."];
 
@@ -101,6 +105,12 @@ const saveList = async () => {
   }
 };
 
+const openItemsDialog = (list) => {
+  itemsList.value = list;
+  errorMessage.value = "";
+  itemsDialog.value = true;
+};
+
 const openDeleteDialog = (list) => {
   deletingList.value = list;
   errorMessage.value = "";
@@ -158,6 +168,15 @@ const confirmDelete = async () => {
               <v-btn
                 icon
                 size="small"
+                :aria-label="`View items for ${list.name}`"
+                variant="text"
+                @click="openItemsDialog(list)"
+              >
+                <v-icon>mdi-format-list-checks</v-icon>
+              </v-btn>
+              <v-btn
+                icon
+                size="small"
                 aria-label="Edit list"
                 variant="text"
                 @click="openEditDialog(list)"
@@ -178,6 +197,8 @@ const confirmDelete = async () => {
         </v-list>
       </v-card-text>
     </v-card>
+
+    <ListItemsDialog v-if="itemsDialog" v-model="itemsDialog" :list="itemsList" />
 
     <v-dialog v-model="addDialog" max-width="480">
       <v-card>
