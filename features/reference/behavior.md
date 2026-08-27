@@ -37,6 +37,10 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Client session stored in `localStorage` key `user` | `Utils.setStore` after register/login | Feature 1 |
 | API `401` / unauthorized message clears `user` and redirects to login | Axios response interceptor | Feature 1 |
 | Shared `emailRules` on registration (required + `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`; invalid format **"Enter a valid email address."**) | `frontend/src/config/validation.js` + Register | Feature 1 |
+| Shared `emailRules` on Edit Profile (same messages as registration) | `validation.js` + MenuBar | Feature 4 |
+| Profile fields trimmed before save; empty required strings rejected | User controller | Feature 4 |
+| Profile password is optional on `PUT`; when provided, min 8 characters and bcrypt hashed | User controller | Feature 4 |
+| After profile save: refresh `localStorage` `user` and dispatch `user-logged-in` | MenuBar | Feature 4 |
 
 ## Ownership & isolation
 
@@ -51,6 +55,8 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | A todo belongs to exactly one list and one user for its lifetime; ownership never changes | Create sets `userId` from `req.user.id` and `listId` from the owned parent list | Feature 3 |
 | Creating a todo requires the parent list to belong to `req.user.id` | `getAccessibleListOrNull` before `Todo.create` | Feature 3 |
 | Cross-user todo or parent-list access returns `404` (never `403`) | `getAccessibleListOrNull` / `getAccessibleTodoOrNull` | Feature 3 |
+| A user may read/update only their own profile (`:id` must match `req.user.id`) | `getAccessibleUserOrNull` | Feature 4 |
+| Cross-user profile access returns `404` (never `403`) | `getAccessibleUserOrNull` | Feature 4 |
 
 ## Lists
 
@@ -78,7 +84,7 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 |------|-------------|------------|
 | Login and register use full-screen layout with **no MenuBar** | `MenuBar` hidden on those routes | Feature 1 / 2 |
 | Login/register server errors shown in `<v-alert type="error">` | Login / Register views | Feature 1 |
-| Signed-in chrome is `MenuBar` with the user's name and **Sign out** | `MenuBar.vue` | Feature 2 |
+| Signed-in chrome is `MenuBar` with a user icon → profile dropdown (name, username, email); **Log out** in the dropdown only (no standalone **Sign out**) | `MenuBar.vue` | Features 2→4 |
 | Dashboard (`home`) is a single lists view — no sidebar/main split | `Dashboard.vue` | Feature 2 |
 | Empty lists view copy: **"No lists yet. Create your first list."** | `Dashboard.vue` | Feature 2 |
 | List row icon actions: **Edit list**, **Delete list** (`size="small"`) | `Dashboard.vue` | Feature 2 |
