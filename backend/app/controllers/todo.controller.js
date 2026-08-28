@@ -6,6 +6,8 @@ import {
 } from "../authorization/authorization.js";
 
 const TODO_TITLE_MAX = 255;
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const INVALID_DUE_DATE_MESSAGE = "Due date must be a valid date in YYYY-MM-DD format.";
 
 const normalizeTodoTitle = (title) => (typeof title === "string" ? title.trim() : "");
 
@@ -19,6 +21,39 @@ const validateTodoTitle = (title) => {
   }
 
   return null;
+};
+
+const isValidCalendarDate = (value) => {
+  if (typeof value !== "string" || !DATE_ONLY_REGEX.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
+};
+
+const parseDueDateField = (body) => {
+  if (!Object.prototype.hasOwnProperty.call(body, "dueDate")) {
+    return { omitted: true };
+  }
+
+  const dueDate = body.dueDate;
+
+  if (dueDate === null) {
+    return { value: null };
+  }
+
+  if (!isValidCalendarDate(dueDate)) {
+    return { error: INVALID_DUE_DATE_MESSAGE };
+  }
+
+  return { value: dueDate };
 };
 
 const parseId = (value) => {
@@ -78,11 +113,18 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: validationMessage });
     }
 
+    const dueDateField = parseDueDateField(req.body);
+
+    if (dueDateField.error) {
+      return res.status(400).send({ message: dueDateField.error });
+    }
+
     const todo = await db.todo.create({
       title,
       completed: false,
       listId: list.id,
       userId: req.user.id,
+      dueDate: dueDateField.omitted ? null : dueDateField.value,
     });
 
     return res.status(201).send(todo);
@@ -125,6 +167,16 @@ exports.update = async (req, res) => {
 
     if (Object.prototype.hasOwnProperty.call(req.body, "completed")) {
       todo.completed = Boolean(req.body.completed);
+    }
+
+    const dueDateField = parseDueDateField(req.body);
+
+    if (dueDateField.error) {
+      return res.status(400).send({ message: dueDateField.error });
+    }
+
+    if (!dueDateField.omitted) {
+      todo.dueDate = dueDateField.value;
     }
 
     await todo.save();

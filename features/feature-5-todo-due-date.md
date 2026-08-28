@@ -317,13 +317,13 @@ Do not implement behavior not in this spec.
 
 ## Definition of Done
 
-*   [ ] Backend and frontend implemented per this spec (**FR-00N** satisfied)
-*   [ ] **Success Criteria (SC-00N)** met
-*   [ ] All mapped tests pass (`npm test`)
-*   [ ] Test Coverage Map complete
-*   [ ] `features/reference/data-model.md` updated
-*   [ ] `features/reference/api.md` updated
-*   [ ] `features/reference/behavior.md` updated (if product rules changed)
+*   [x] Backend and frontend implemented per this spec (**FR-00N** satisfied)
+*   [x] **Success Criteria (SC-00N)** met
+*   [x] All mapped tests pass (`npm test`)
+*   [x] Test Coverage Map complete
+*   [x] `features/reference/data-model.md` updated
+*   [x] `features/reference/api.md` updated
+*   [x] `features/reference/behavior.md` updated (if product rules changed)
 
 ---
 

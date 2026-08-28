@@ -1,6 +1,12 @@
 <script setup>
 import { ref, watch } from "vue";
 import todoServices from "../services/todoServices.js";
+import {
+  formatDueDate,
+  isTodoOverdue,
+  optionalDueDateRules,
+  toDateInputValue,
+} from "../config/validation.js";
 
 const props = defineProps({
   modelValue: {
@@ -22,12 +28,14 @@ const errorMessage = ref("");
 const addDialog = ref(false);
 const addForm = ref(null);
 const newTodoTitle = ref("");
+const newTodoDueDate = ref("");
 const addLoading = ref(false);
 
 const editDialog = ref(false);
 const editForm = ref(null);
 const editingTodo = ref(null);
 const editTitle = ref("");
+const editDueDate = ref("");
 const editLoading = ref(false);
 
 const deleteDialog = ref(false);
@@ -81,6 +89,7 @@ const closeDialog = () => {
 
 const openAddDialog = () => {
   newTodoTitle.value = "";
+  newTodoDueDate.value = "";
   errorMessage.value = "";
   addDialog.value = true;
 };
@@ -96,9 +105,15 @@ const createTodo = async () => {
   errorMessage.value = "";
 
   try {
-    const response = await todoServices.createTodo(props.list.id, {
+    const payload = {
       title: newTodoTitle.value.trim(),
-    });
+    };
+
+    if (newTodoDueDate.value) {
+      payload.dueDate = newTodoDueDate.value;
+    }
+
+    const response = await todoServices.createTodo(props.list.id, payload);
     todos.value = sortTodos([...todos.value, response.data]);
     addDialog.value = false;
   } catch (error) {
@@ -111,6 +126,7 @@ const createTodo = async () => {
 const openEditDialog = (todo) => {
   editingTodo.value = todo;
   editTitle.value = todo.title;
+  editDueDate.value = toDateInputValue(todo.dueDate);
   errorMessage.value = "";
   editDialog.value = true;
 };
@@ -128,6 +144,7 @@ const saveTodo = async () => {
   try {
     const response = await todoServices.updateTodo(editingTodo.value.id, {
       title: editTitle.value.trim(),
+      dueDate: editDueDate.value || null,
     });
     todos.value = sortTodos(
       todos.value.map((item) => (item.id === response.data.id ? response.data : item))
@@ -219,6 +236,14 @@ const confirmDelete = async () => {
             >
               {{ todo.title }}
             </v-list-item-title>
+            <v-list-item-subtitle v-if="todo.dueDate">
+              <span
+                class="todo-due-date"
+                :class="{ 'text-error': isTodoOverdue(todo) }"
+              >
+                {{ formatDueDate(todo.dueDate) }}
+              </span>
+            </v-list-item-subtitle>
             <template #append>
               <v-btn
                 icon
@@ -255,12 +280,25 @@ const confirmDelete = async () => {
       <v-card-title>Add Item</v-card-title>
       <v-card-text>
         <v-form ref="addForm" @submit.prevent="createTodo">
-          <v-text-field
-            v-model="newTodoTitle"
-            label="Todo title"
-            density="comfortable"
-            :rules="titleRules"
-          />
+          <v-row>
+            <v-col cols="7">
+              <v-text-field
+                v-model="newTodoTitle"
+                label="Todo title"
+                density="comfortable"
+                :rules="titleRules"
+              />
+            </v-col>
+            <v-col cols="5">
+              <v-text-field
+                v-model="newTodoDueDate"
+                type="date"
+                label="Due date"
+                density="comfortable"
+                :rules="optionalDueDateRules"
+              />
+            </v-col>
+          </v-row>
           <v-alert v-if="errorMessage" type="error" class="mt-2">
             {{ errorMessage }}
           </v-alert>
@@ -287,12 +325,25 @@ const confirmDelete = async () => {
       <v-card-title>Edit Item</v-card-title>
       <v-card-text>
         <v-form ref="editForm" @submit.prevent="saveTodo">
-          <v-text-field
-            v-model="editTitle"
-            label="Todo title"
-            density="comfortable"
-            :rules="titleRules"
-          />
+          <v-row>
+            <v-col cols="7">
+              <v-text-field
+                v-model="editTitle"
+                label="Todo title"
+                density="comfortable"
+                :rules="titleRules"
+              />
+            </v-col>
+            <v-col cols="5">
+              <v-text-field
+                v-model="editDueDate"
+                type="date"
+                label="Due date"
+                density="comfortable"
+                :rules="optionalDueDateRules"
+              />
+            </v-col>
+          </v-row>
           <v-alert v-if="errorMessage" type="error" class="mt-2">
             {{ errorMessage }}
           </v-alert>

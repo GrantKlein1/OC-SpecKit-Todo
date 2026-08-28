@@ -33,3 +33,4 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Lists table and list CRUD | Feature 2 |
 | Todos table and todo CRUD | Feature 3 |
 | Profile API + MenuBar profile dropdown / Log out | Feature 4 |
+| Todo `dueDate` + overdue styling | Feature 5 |
