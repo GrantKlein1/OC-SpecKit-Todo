@@ -77,6 +77,9 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Todos are ordered incomplete first, then by `createdAt` ascending | `order: [["completed", "ASC"], ["createdAt", "ASC"]]` | Feature 3 |
 | Client-supplied `userId` on create is ignored | Todo controller | Feature 3 |
 | Deleting a list deletes all todos in that list | `List hasMany Todo` `onDelete: CASCADE` | Feature 3 |
+| `dueDate` is optional on create/update; `null` means no due date | Todo API + add/edit item dialogs | Feature 5 |
+| `dueDate` is calendar-only `YYYY-MM-DD` (`DATEONLY`); invalid strings `400` with `"Due date must be a valid date in YYYY-MM-DD format."` | Todo controller | Feature 5 |
+| `PUT` with `dueDate: null` clears the date; omitting `dueDate` leaves the stored value unchanged | Todo update controller | Feature 5 |
 
 ## UI
 
@@ -94,6 +97,8 @@ They do **not** authorize new scope — implement only from `features/feature-*.
 | Todo add/edit/delete use nested dialogs — no sidebar/main split | `ListItemsDialog.vue` | Feature 3 |
 | Empty todo title is blocked in the add-item dialog: **"Todo title is required."** | List-items form rules | Feature 3 |
 | Completed todos show struck-through / muted title styling | `ListItemsDialog.vue` | Feature 3 |
+| Todo rows show a formatted due date when `dueDate` is set | `ListItemsDialog.vue` | Feature 5 |
+| Overdue styling (error color on the date text) only when **incomplete** and `dueDate` is **before today** in the browser's local calendar | `isTodoOverdue` + `ListItemsDialog.vue` | Feature 5 |
 
 ## Errors (product convention)
 

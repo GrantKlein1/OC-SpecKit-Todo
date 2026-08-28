@@ -1,7 +1,7 @@
 # API Reference
 
 **Base path:** `/todo/`  
-**Status:** Integrated API through **Feature 4** (user profile management).  
+**Status:** Integrated API through **Feature 5** (todo due dates).  
 **Authority for new work:** feature specs in `features/` — update this file in the same PR when routes or payloads change.
 
 **Auth:** Send `Authorization: Bearer <token>` on protected routes.  
@@ -15,6 +15,7 @@
 | List CRUD (`GET/POST /todo/lists`, `PUT/DELETE /todo/lists/:listId`) | 2 |
 | Todo CRUD (`GET/POST /todo/lists/:listId/todos`, `PUT/DELETE /todo/todos/:id`) | 3 |
 | Profile (`GET/PUT /todo/users/:id`) | 4 |
+| Todo `dueDate` on create/update | 5 |
 
 ---
 
@@ -106,28 +107,42 @@ All list endpoints require a valid session. Cross-user access returns `404` (not
 
 ---
 
-## Todos (Feature 3)
+## Todos (Features 3–5)
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
 | `GET` | `/todo/lists/:listId/todos` | Yes | Fetch all todos in a list owned by the authenticated user, incomplete first then `createdAt` ascending |
 | `POST` | `/todo/lists/:listId/todos` | Yes | Add a todo to a list owned by the authenticated user |
-| `PUT` | `/todo/todos/:id` | Yes | Update a todo (title and/or `completed`) owned by the caller |
+| `PUT` | `/todo/todos/:id` | Yes | Update a todo (title, `completed`, and/or `dueDate`) owned by the caller |
 | `DELETE` | `/todo/todos/:id` | Yes | Delete a todo owned by the caller |
 
 All todo endpoints require a valid session. Cross-user access to a list or todo returns `404` (not `403`). Invalid `listId` or todo `id` returns `400`.
 
 **Create todo request body:**
 ```json
-{ "title": "Buy milk" }
+{
+  "title": "Buy milk",
+  "dueDate": "2026-07-15"
+}
 ```
 
-`userId`, `listId`, and `completed` in the request body are ignored on create. Ownership is always `req.user.id`; the parent list comes from `:listId`; new todos default to `completed: false`. Titles are trimmed before save.
+`dueDate` is optional. Omit it or send `null` for no due date. `userId`, `listId`, and `completed` in the request body are ignored on create. Ownership is always `req.user.id`; the parent list comes from `:listId`; new todos default to `completed: false`. Titles are trimmed before save.
 
-**Update todo request body** (one or both fields):
+**Update todo request body** (any combination; omit a field to leave it unchanged):
 ```json
-{ "title": "Buy oat milk", "completed": true }
+{
+  "title": "Buy oat milk",
+  "completed": true,
+  "dueDate": "2026-07-20"
+}
 ```
+
+Clear due date:
+```json
+{ "dueDate": null }
+```
+
+Omitting `dueDate` on `PUT` leaves the stored date unchanged. Sending `dueDate: null` clears it.
 
 **Todo success response** (`200` / `201`):
 ```json
@@ -136,15 +151,18 @@ All todo endpoints require a valid session. Cross-user access to a list or todo 
   "listId": 1,
   "title": "Buy milk",
   "completed": false,
+  "dueDate": "2026-07-15",
   "userId": 42,
   "createdAt": "2026-07-02T12:05:00.000Z",
   "updatedAt": "2026-07-02T12:05:00.000Z"
 }
 ```
 
+`dueDate` is a calendar date `YYYY-MM-DD`, or `null` when not set.
+
 `GET /todo/lists/:listId/todos` returns an array of todo objects. `DELETE` returns `200` with the deleted todo object.
 
-**Todo errors:** empty or whitespace-only title `400` with `"Todo title is required."`; title longer than 255 characters `400` with `"Todo title must be 255 characters or fewer."`; parent list not found / not owned `404` with `"List with id=<id> not found."`; todo not found / not owned `404` with `"Todo with id=<id> not found."`; unauthenticated `401`.
+**Todo errors:** empty or whitespace-only title `400` with `"Todo title is required."`; title longer than 255 characters `400` with `"Todo title must be 255 characters or fewer."`; invalid `dueDate` `400` with `"Due date must be a valid date in YYYY-MM-DD format."`; parent list not found / not owned `404` with `"List with id=<id> not found."`; todo not found / not owned `404` with `"Todo with id=<id> not found."`; unauthenticated `401`.
 
 ---
 
