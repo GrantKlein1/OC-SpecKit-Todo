@@ -133,6 +133,11 @@ describe("Feature 4 — User Profile Management", () => {
       expect(text).toContain("jane@example.com");
       expect(text).toContain("Edit Profile");
       expect(text).toContain("Log out");
+
+      const profileItem = wrapper
+        .findAllComponents({ name: "VListItem" })
+        .find((item) => item.props("title") === "Jane Doe");
+      expect(profileItem.props("lines")).toBe("two");
     });
   });
 

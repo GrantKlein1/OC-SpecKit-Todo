@@ -151,7 +151,7 @@ const handleLogOut = async () => {
 
       <v-card min-width="280" rounded="lg">
         <v-list>
-          <v-list-item :title="displayName">
+          <v-list-item :title="displayName" lines="two">
             <template #subtitle>
               <div>{{ user.username }}</div>
               <div>{{ user.email }}</div>
